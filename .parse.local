@@ -1,0 +1,10 @@
+{
+  "applications": {
+    "HitupMe": {
+      "applicationId": "oGxgYJBtKcR5JNuST5uQw7mjHUApMHobZ0GUXHI7"
+    },
+    "_default": {
+      "link": "HitupMe"
+    }
+  }
+}
