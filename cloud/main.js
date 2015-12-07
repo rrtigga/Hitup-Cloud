@@ -1,81 +1,33 @@
-// Use Parse.Cloud.define to define as many cloud functions as you want.
-// For example:
-Parse.Cloud.define("hello", function(request, response) {
-  response.success("Hello world!");
-});
-
-//Parse AfterSave of group:
-Parse.Cloud.afterSave("Groups", function(request) {
-
+Parse.Cloud.define("getAllHittupsToday", function(request, response) {
   Parse.Cloud.useMasterKey();
-  console.log(request.object.get("users_joined"));
-  query = new Parse.Query(Parse.User);
+	var query = new Parse.Query("Hittups2");
+  //the parameters will be passed in on a client side
+  //fbID and PFGeoPoint coordinates
+  //the facebook id needs to be contained in the friends list of other users
+   query.containedIn(request.params.fbID, Parse.User.get("fb_friendIds"));
+   
+   //get coordinates of Hittups using the Hittup2 class in Parse
+   var Hittups2 = Parse.Object.extend("Hittups2");
+   
+   //get the coordinates
+   var coordinates = Hittups2.get("coordinates");
+   //put restraints of 50 miles only
+   query.withinMiles(request.params.coordinates, coordinates, 50);
+   
+   //query time is greater than now
+   var expire_time = Hittups2.get("expire_time");
+   var createdAt = Hittups2.get("createdAt");
+   query.greaterThan(expire_time,createdAt);
 
-  query.containedIn("fb_id", request.object.get("users_joined"));
   query.find({
-	success: function(users) {
-		//iterating through the users in the array
-	  for (var i = 0; i< users.length; i++) {
-	  	console.log("adding to");
-	  	console.log(users[i].get("fb_id"));
-	  	users[i].addUnique("groups_joined",request.object.get("group_id"));
-	  	users[i].save();
-	  }
+    success: function(results) {
+    	console.log(results);
 
-    }
-  });
-
-});
-
-Parse.Cloud.beforeDelete("Groups", function(request, response) {
-
-	Parse.Cloud.useMasterKey();
-	console.log(request.object.get("users_joined"));
-	query = new Parse.Query(Parse.User);
-
-	query.containedIn("fb_id", request.object.get("users_joined"));
-	query.find({
-		success: function(users) {
-			//iterating through the users in the array
-		  for (var i = 0; i< users.length; i++) {
-		  	console.log("adding to");
-		  	console.log(users[i].get("fb_id"));
-		  	users[i].remove("groups_joined", request.object.get("group_id") );
-		  	users[i].save();
-		  }
-		  response.success();
-		}
-
-    });
-});
-
-/*
-  //query the Groups
-  query = new Parse.Query("Groups");
-  //get the users joined in the group
-  //query.get(request.object.get("users_joined").id, {
-  query.get(request.object.id, {
-    success: function(post) {
-    	console.log("line 18");
-    	console.log(post);
-		//Find all users in User class and check if they are in the users_joined array for the Group
-		var User = Parse.Object.extend("User");
-		var query = new Parse.Query(User);
-		// Where the User/s fb_id is contained in the users_joined array
-		//console.log(object.get("users_joined"));
-		query.containedIn("fb_id", object.get("users_joined"));
-		query.first({
-		  success: function(object) {
-		  	//save the group_id to groups_joined in the User class for that specific user
-		  	object.set("groups_joined", post);
-		  },
-		  error: function(error) {
-		    alert("Error: " + error.code + " " + error.message);
-		  }
-		});
     },
-    error: function(error) {
-      console.error("Got an error " + error.code + " : " + error.message);
+    error: function() {
+      response.error("hittup retrieval failed");
     }
   });
-*/
+});
+
+
