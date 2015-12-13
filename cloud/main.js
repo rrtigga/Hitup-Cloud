@@ -1,27 +1,38 @@
 Parse.Cloud.define("getAllHittupsToday", function(request, response) {
   Parse.Cloud.useMasterKey();
-	var query = new Parse.Query("Hittups2");
+
+	var Hittups2 = new Parse.Object.extend("Hittups2");
+  var query = new Parse.Query(Hittups2);
+  //make a new user query
+  var friends_list;
+  
+  var userquery = new Parse.Query(Parse.User);
+  userquery.equalTo("fb_id", request.params.fbID);
+  userquery.first({
+  success: function(results) {
+    var friends_list = results.get("fb_friendIds");
+  },
+  error: function(error) {
+    alert("Error: " + error.code + " " + error.message);
+  }
+  });
+
   //the parameters will be passed in on a client side
   //fbID and PFGeoPoint coordinates
   //the facebook id needs to be contained in the friends list of other users
-   query.containedIn(request.params.fbID, Parse.User.get("fb_friendIds"));
-   
-   //get coordinates of Hittups using the Hittup2 class in Parse
-   var Hittups2 = Parse.Object.extend("Hittups2");
-   
-   //get the coordinates
-   var coordinates = Hittups2.get("coordinates");
+   query.containedIn(request.params.fbID, friends_list);
+
    //put restraints of 50 miles only
-   query.withinMiles(request.params.coordinates, coordinates, 50);
+   query.withinMiles("coordinates",request.params.coordinates, 50);
    
-   //query time is greater than now
-   var expire_time = Hittups2.get("expire_time");
-   var createdAt = Hittups2.get("createdAt");
-   query.greaterThan(expire_time,createdAt);
+   var now = new Date();
+   console.log(now);
+
+   //query.greaterThan("expire_time", now);
 
   query.find({
     success: function(results) {
-    	console.log(results);
+      return results;
 
     },
     error: function() {
