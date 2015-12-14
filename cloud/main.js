@@ -1,44 +1,47 @@
 Parse.Cloud.define("getAllHittupsToday", function(request, response) {
   Parse.Cloud.useMasterKey();
 
-	var Hittups2 = new Parse.Object.extend("Hittups2");
-  var query = new Parse.Query(Hittups2);
-  //make a new user query
-  var friends_list;
-  
-  var userquery = new Parse.Query(Parse.User);
-  userquery.equalTo("fb_id", request.params.fbID);
-  userquery.first({
-  success: function(results) {
-    var friends_list = results.get("fb_friendIds");
-  },
-  error: function(error) {
-    alert("Error: " + error.code + " " + error.message);
-  }
-  });
+  var userId = request.user.get("fb_id")
+  var friends_list = request.user.get("fb_friendIds");
+  friends_list.push(userId);
+  var now = new Date();
+  var today = new Date(now - 16*60*60*1000);
 
-  //the parameters will be passed in on a client side
-  //fbID and PFGeoPoint coordinates
-  //the facebook id needs to be contained in the friends list of other users
-   query.containedIn(request.params.fbID, friends_list);
 
-   //put restraints of 50 miles only
-   query.withinMiles("coordinates",request.params.coordinates, 50);
-   
-   var now = new Date();
-   console.log(now);
+  var generalQuery = new Parse.Query("Hittups2");
+  generalQuery.containedIn("ihost_Id", friends_list);
+  generalQuery.equalTo("isPrivate", false);
+  generalQuery.greaterThan("expire_time", today);
 
-   //query.greaterThan("expire_time", now);
+  var privateQuery = new Parse.Query("Hittups2");
+  privateQuery.containedIn("iInvited_Ids", userId);
+  privateQuery.equalTo("isPrivate", true);
+  privateQuery.greaterThan("expire_time", today);
 
-  query.find({
+
+  generalQuery.find({
     success: function(results) {
-      return results;
+
+      response.success(results);
+
+      // privateQuery.find({
+      //   success: function(results2) {
+      //     response.success(results.concat(results2));
+
+      //   },
+      //   error: function() {
+      //     // console.log("error in this bitch");
+      //     response.error("Error2: " + error.code + " " + error.message);
+      //   }
+      // });
 
     },
     error: function() {
-      response.error("hittup retrieval failed");
+      console.log("error in this bitch");
+      response.error("Error1: " + error.code + " " + error.message);
     }
   });
+
 });
 
 
